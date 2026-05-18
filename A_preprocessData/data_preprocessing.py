@@ -6,9 +6,11 @@ musical files in xml or abc formats
 for training in MINGUS
 """
 import sys
+import os
 import argparse
 import json
 import glob
+from pathlib import Path
 import numpy as np
 import music21 as m21
 from note_seq import abc_parser
@@ -821,51 +823,76 @@ def arraysFromStructuredSong(structuredTune):
     return song
 
 
+def _song_id_from_xml_path(xml_path: str) -> str:
+    """Extract song_id (file stem) from xml path. Mirrors CMT folder naming."""
+    return os.path.splitext(os.path.basename(xml_path))[0]
+
+
+def _route_song_to_bucket(song_id: str, split: dict) -> str | None:
+    """Return 'train', 'validation', 'test', or None if song_id is not in split.
+
+    Note: split.json's key is 'eval', but MINGUS internally uses 'validation'.
+    """
+    if song_id in split.get("train", []):
+        return "train"
+    if song_id in split.get("eval", []):
+        return "validation"
+    if song_id in split.get("test", []):
+        return "test"
+    return None
+
+
 if __name__ == '__main__':
-    
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--format', type=str, default='xml',
                         help='data format for preprocessing')
+    parser.add_argument('--split-json', type=str, required=True,
+                        help='path to wjazzd_split.json (single source of truth)')
     args = parser.parse_args(sys.argv[1:])
-    
-    
-    structuredSongs = []
-    songs = []
+
+    with open(args.split_json) as f:
+        split = json.load(f)
+
+    # Build song_id → tune mapping (preserve all parsing logic)
+    song_id_to_tune = {}
+    structured_by_id = {}
     if args.format == 'xml':
         print('Loading dataset from xml: ')
         print('-' * 80)
-        source_path = 'A_preprocessData/data/xml/*.xml'
-        source_songs = glob.glob(source_path)
+        source_path = 'A_preprocessData/data/xml/[0-9][0-9][0-9]_*.xml'
+        source_songs = sorted(glob.glob(source_path))
         for xml_path in source_songs:
-            structuredTune = xmlToStructuredSong(xml_path)
-            tune = arraysFromStructuredSong(structuredTune)
-            structuredSongs.append(structuredTune)
-            songs.append(tune)
-
-    elif args.format == 'abc':
-        print('Loading dataset from abc: ')
-        print('-' * 80)
-        source_path = 'A_preprocessData/data/abc/*.abc'
-        source_songs = glob.glob(source_path)
-        for abc_path in source_songs:
-            structuredTunes = abcToStructuredSong(abc_path)
-            for structuredTune in structuredTunes:
+            song_id = _song_id_from_xml_path(xml_path)
+            try:
+                structuredTune = xmlToStructuredSong(xml_path)
                 tune = arraysFromStructuredSong(structuredTune)
-                structuredSongs.append(structuredTune)
-                songs.append(tune)
-    
-    
-    # split into train, validation and test
-    songs_split = {}
-    # train: 70% 
-    songs_split['train'] = songs[:int(len(songs)*0.7)]
-    # train: 10% 
-    songs_split['validation'] = songs[int(len(songs)*0.7)+1:int(len(songs)*0.7)+1+int(len(songs)*0.1)]
-    # train: 20%
-    songs_split['test'] = songs[int(len(songs)*0.7)+1+int(len(songs)*0.1):]
-    # structured songs (ordered by bar and beats)
-    songs_split['structured for generation'] = structuredSongs
-    
+                song_id_to_tune[song_id] = tune
+                structured_by_id[song_id] = structuredTune
+            except Exception as exc:
+                print(f'   [SKIP] {xml_path}: {type(exc).__name__}: {exc}')
+    elif args.format == 'abc':
+        raise NotImplementedError("abc format requires song_id mapping; not used for wjazzd")
+
+    # Route songs into buckets based on split.json
+    songs_split = {'train': [], 'validation': [], 'test': []}
+    structured_for_gen = []
+    skipped_unknown = []
+    for song_id, tune in song_id_to_tune.items():
+        bucket = _route_song_to_bucket(song_id, split)
+        if bucket is None:
+            skipped_unknown.append(song_id)
+            continue
+        songs_split[bucket].append(tune)
+        structured_for_gen.append(structured_by_id[song_id])
+
+    songs_split['structured for generation'] = structured_for_gen
+
+    print(f'Split sizes: train={len(songs_split["train"])}, '
+          f'val={len(songs_split["validation"])}, test={len(songs_split["test"])}')
+    if skipped_unknown:
+        print(f'WARN: {len(skipped_unknown)} xml files not in split.json (skipped)')
+
     # Convert dict to JSON and SAVE IT
     with open('A_preprocessData/data/DATA.json', 'w') as fp:
         json.dump(songs_split, fp, indent=4)

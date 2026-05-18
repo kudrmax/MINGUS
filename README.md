@@ -1,5 +1,42 @@
 # MINGUS - Melodic Improvisation Neural Generator Using Seq2seq
 
+## Pretrained weights (jazz)
+
+Weights for the WJazzD-trained MINGUS (used by the comparison pipeline) live on
+Hugging Face: [maxkudryashov/mingus-1](https://huggingface.co/maxkudryashov/mingus-1).
+
+Two ablation runs (different conditioning), both 10 epochs / BPTT 35 / split 340/42/40:
+
+| run | pitch cond | duration cond | pitch test_ppl | pitch test_acc | duration test_ppl | duration test_acc |
+|---|---|---|---|---|---|---|
+| `paper/` (default in `train.py`)            | I-C-NC-B-BE-O | I-C-NC-B-BE-O | **13.08** | 0.131 | 4.087 | 0.344 |
+| `paper-optimal/` (per ISMIR 2021 §3.2)      | D-C-B-BE-O    | B-BE-O        | 13.53     | 0.120 | **4.048** | **0.345** |
+| Madaghiele 2021 (paper, on 86-solo split)   | D-C-B-BE-O    | B-BE-O        | 11.01     | 0.163 | 4.140     | 0.323     |
+
+The paper-optimal swap **didn't help our pitch numbers** — most likely because
+our test set is 40 specific solos (cross-model intersection) rather than the
+paper's 86 random ones, making the conditioning-search space test-set-specific.
+Duration model reproduces / slightly beats paper in both runs, confirming the
+pipeline is correct.
+
+Download (paper-optimal — recommended):
+```bash
+pip install -U huggingface_hub
+hf download maxkudryashov/mingus-1 \
+  "paper-optimal/pitchModel/MINGUS COND D-C-B-BE-O Epochs 10.pt" \
+  "paper-optimal/durationModel/MINGUS COND B-BE-O Epochs 10.pt" \
+  --local-dir B_train/models
+# → B_train/models/paper-optimal/{pitchModel,durationModel}/MINGUS COND ... Epochs 10.pt
+```
+
+Per-epoch metrics, summary.json, and train.log:
+- [`results/mingus-wjazzd-10ep/`](https://github.com/kudrmax/jazz-generation-research/tree/master/pipelines/training-pipeline/results/mingus-wjazzd-10ep) — default conditioning
+- [`results/mingus-wjazzd-paper-optimal-10ep/`](https://github.com/kudrmax/jazz-generation-research/tree/master/pipelines/training-pipeline/results/mingus-wjazzd-paper-optimal-10ep) — paper-optimal conditioning
+
+Trained via the Colab notebook at `training/colab_train.ipynb`.
+
+---
+
 MINGUS is a Transformer-based Seq2Seq architecture for modelling and generating monophonic jazz melodic lines. MINGUS relies on two dedicated embedding models (respectively for pitch and duration) and exploits in prediction features such as chords (current and following), bass line, position inside the measure. The obtained results are comparable with the state of the art of music generation with neural models, with particularly good performances on jazz music.
 
 More information in the paper ([bib](./mingus.bib)):

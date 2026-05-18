@@ -10,6 +10,8 @@ import pandas as pd
 import numpy as np
 import glob
 import torch
+import argparse
+import os
 
 # Device configuration
 device = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
@@ -101,16 +103,26 @@ def WjazzChordToM21(chord):
 
 
 if __name__ == '__main__':
-    
-    possible_durations = [4, 2, 1, 1/2, 1/4, 1/8, 1/16, 
-                          3, 3/2, 3/4, 3/8, 
+
+    _parser = argparse.ArgumentParser()
+    _parser.add_argument('--csv-root', type=str,
+                         default='A_preprocessData/data/WjazzDBcsv',
+                         help='root dir containing csv_beats/ and csv_melody/')
+    _parser.add_argument('--xml-out', type=str,
+                         default='A_preprocessData/data/xml',
+                         help='output dir for generated xml files')
+    _args = _parser.parse_args()
+    os.makedirs(_args.xml_out, exist_ok=True)
+
+    possible_durations = [4, 2, 1, 1/2, 1/4, 1/8, 1/16,
+                          3, 3/2, 3/4, 3/8,
                           1/6, 1/12]
     
     rests_durations = [4, 2, 1, 1/2, 1/4, 1/8,
                        3, 3/2, 3/4, 1/6]
 
     # Load csv as dataframe
-    source_path = 'A_preprocessData/data/WjazzDBcsv/csv_beats/*.csv'
+    source_path = f'{_args.csv_root}/csv_beats/*.csv'
     source_songs = glob.glob(source_path)
     #source_songs = ["data/WjazzDBcsv/csv_beats/ChetBaker_ThereWillNeverBeAnotherYou-1_Solo.csv"]
     
@@ -118,7 +130,7 @@ if __name__ == '__main__':
         
         beat_df = pd.read_csv(csv_path)
         song_name = '.'.join(csv_path.split('/')[-1].split('.')[:-1])
-        melody_path = 'A_preprocessData/data/WjazzDBcsv/csv_melody/' + song_name + '.csv'
+        melody_path = f'{_args.csv_root}/csv_melody/{song_name}.csv'
         meldoy_df = pd.read_csv(melody_path)
         print('converting ', song_name)
         
@@ -337,7 +349,8 @@ if __name__ == '__main__':
                         last_chord = row['chord']
 
                 xml_converter = m21.converter.subConverters.ConverterMusicXML()
-                xml_converter.write(stream, 'musicxml', 'A_preprocessData/data/xml/'+song_name+'.xml')
+                xml_converter.write(stream, 'musicxml',
+                                    f'{_args.xml_out}/{song_name}.xml')
                 #fp = stream_melody.write('midi', fp=f'data/WjazzDBxml6/melody/{song_name}.mid')
                 #fp = stream_chords.write('midi', fp=f'data/WjazzDBxml6/chords/{song_name}.mid')
 

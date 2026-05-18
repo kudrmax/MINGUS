@@ -378,13 +378,13 @@ def NottinghamChordToM21(chord):
 class MusicDB():
 
     def __init__(self, device, TRAIN_BATCH_SIZE, EVAL_BATCH_SIZE,
-                 BPTT, AUGMENTATION = True, SEGMENTATION = True, 
-                 augmentation_const = 3):
+                 BPTT, AUGMENTATION = True, SEGMENTATION = True,
+                 augmentation_const = 3,
+                 data_path = 'A_preprocessData/data/DATA.json'):
 
         # DATA LOADING
         print('Loading data from the Database...')
-        songs_path = 'A_preprocessData/data/DATA.json'
-        with open(songs_path) as f:
+        with open(data_path) as f:
             songs = json.load(f)
             
         self.songs = songs
@@ -693,13 +693,13 @@ class MusicDB():
         print('Pre-processing...')
         # Convert lists to array 
     
-        pitch_train = np.array(pitch_train)
-        pitch_validation = np.array(pitch_validation)
-        pitch_test = np.array(pitch_test)
-        
-        duration_train = np.array(duration_train)
-        duration_validation = np.array(duration_validation)
-        duration_test = np.array(duration_test)
+        pitch_train = np.array(pitch_train, dtype=object)
+        pitch_validation = np.array(pitch_validation, dtype=object)
+        pitch_test = np.array(pitch_test, dtype=object)
+
+        duration_train = np.array(duration_train, dtype=object)
+        duration_validation = np.array(duration_validation, dtype=object)
+        duration_test = np.array(duration_test, dtype=object)
        
         new_chord_train = []
         for song in chord_train:
@@ -725,9 +725,9 @@ class MusicDB():
                 new_song_chords.append(CustomToMidiChords[chord][:4])
             new_chord_test.append(new_song_chords)
         
-        chord_train = np.array(new_chord_train)
-        chord_validation = np.array(new_chord_validation)
-        chord_test = np.array(new_chord_test)
+        chord_train = np.array(new_chord_train, dtype=object)
+        chord_validation = np.array(new_chord_validation, dtype=object)
+        chord_test = np.array(new_chord_test, dtype=object)
         
         new_next_chord_train = []
         for song in next_chord_train:
@@ -753,21 +753,21 @@ class MusicDB():
                 new_song_chords.append(CustomToMidiChords[chord][:4])
             new_next_chord_test.append(new_song_chords)
             
-        next_chord_train = np.array(new_next_chord_train)
-        next_chord_validation = np.array(new_next_chord_validation)
-        next_chord_test = np.array(new_next_chord_test)
-        
-        bass_train = np.array(bass_train)
-        bass_validation = np.array(bass_validation)
-        bass_test = np.array(bass_test)
-        
-        beat_train = np.array(beat_train)
-        beat_validation = np.array(beat_validation)
-        beat_test = np.array(beat_test)
-        
-        offset_train = np.array(offset_train)
-        offset_validation = np.array(offset_validation)
-        offset_test = np.array(offset_test)
+        next_chord_train = np.array(new_next_chord_train, dtype=object)
+        next_chord_validation = np.array(new_next_chord_validation, dtype=object)
+        next_chord_test = np.array(new_next_chord_test, dtype=object)
+
+        bass_train = np.array(bass_train, dtype=object)
+        bass_validation = np.array(bass_validation, dtype=object)
+        bass_test = np.array(bass_test, dtype=object)
+
+        beat_train = np.array(beat_train, dtype=object)
+        beat_validation = np.array(beat_validation, dtype=object)
+        beat_test = np.array(beat_test, dtype=object)
+
+        offset_train = np.array(offset_train, dtype=object)
+        offset_validation = np.array(offset_validation, dtype=object)
+        offset_test = np.array(offset_test, dtype=object)
         
         
         # Data augmentation

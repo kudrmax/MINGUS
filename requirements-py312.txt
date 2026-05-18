@@ -1,0 +1,21 @@
+# MINGUS — runtime requirements for Python 3.12 + numpy 2.x
+# Pinned to versions that were end-to-end tested with our patches
+# (Python 3.12 / numpy 2.x compatibility, see commit 22cf61b0).
+#
+# Use this file for our pipeline-driven inference. The original
+# requirements.txt is for the upstream conda-based setup
+# (numpy 1.18 / torch 1.7) and is incompatible with Python 3.12.
+#
+# Install:
+#   python3.12 -m venv .venv
+#   source .venv/bin/activate
+#   pip install -r requirements-py312.txt
+
+torch==2.11.0
+numpy==2.4.4
+music21==6.7.1
+pretty_midi==0.2.11
+note-seq==0.0.5
+tensorboard==2.20.0
+pandas==3.0.2
+scikit-learn==1.8.0

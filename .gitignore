@@ -141,3 +141,5 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+B_train/runs/
+B_train/models/
